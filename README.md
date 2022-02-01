@@ -1,4 +1,4 @@
-# Project Name
+# Simple Chat Server in Typescript
 
 > This is a simple chat server that once started it listens by default on port 10000. The chat protocol is very simple, clients connect with "telnet" and write single lines of text. On each new line of text, the server will broadcast that line to all other connected clients. 
 
