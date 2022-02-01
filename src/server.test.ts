@@ -2,6 +2,9 @@
 import server from './server'
 import * as net from "net";
 
+//Server parameters used for test and different from default
+const testPort = 8000
+const testIp = '127.0.0.1'
 
 //Number of clients to simulate
 const n_clients = 5;
@@ -22,10 +25,11 @@ const randomString = (length: number) => {
   return result;
 }
 
-const clientOnData = (client: net.Socket) => {
+//Convert net.Socket.on callback to promise
+const clientOn = (event: string, client: net.Socket) => {
   return new Promise((resolve, reject) => {
     try {
-      client.on('data', (data) => {
+      client.on(event, (data) => {
         resolve(data)
       })
     } catch (error) {
@@ -34,38 +38,21 @@ const clientOnData = (client: net.Socket) => {
   })
 }
 
-const clientOnClose = (client: net.Socket) => {
-  return new Promise((resolve, reject) => {
-    try {
-      client.on('close', (val) => {
-        resolve(val)
-      })
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
-
+//This function sends a data string trought senderClient and waits for other clients to receive it
 const sendDataAndWait = (senderClient:net.Socket, data:string) => {
   senderClient.write(data)
   
   const allPromises = []
   clients.forEach((cl)=>{
     if (cl !== senderClient){
-      allPromises.push(clientOnData(cl))
+      allPromises.push(clientOn('data', cl))
     }
   })
   return Promise.all(allPromises);
-
-
 }
 
 describe('Test conncetion with telnet', function () {
 
-  const testPort = 8000
-  const testIp = '127.0.0.1'
-
-  
   for (let i = 0; i < n_clients; i++)
     clients.push(new net.Socket())
 
@@ -108,7 +95,7 @@ describe('Test conncetion with telnet', function () {
     const disconnectClient = clients[rndClientToDisconnect]
     disconnectClient.destroy()
 
-    clientOnClose(disconnectClient).then(async ()=>{
+    clientOn('close', disconnectClient).then(async ()=>{
       await delay(100);
       clients.splice(rndClientToDisconnect, 1);
 
@@ -133,7 +120,7 @@ describe('Test conncetion with telnet', function () {
 
     const allClosed = []
     clients.forEach(async cl => {
-      allClosed.push(clientOnClose(cl))
+      allClosed.push(clientOn('close', cl))
       await delay(100);
       cl.destroy()
     })
